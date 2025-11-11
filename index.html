@@ -83,7 +83,6 @@
       cursor: not-allowed;
     }
 
-    /* Loader circular */
     .loader {
       display: none;
       margin: 20px auto;
@@ -147,7 +146,7 @@
       if (file) reader.readAsDataURL(file);
     });
 
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', async () => {
       if (!base64) {
         alert("📷 Selecione ou tire uma foto primeiro.");
         return;
@@ -160,25 +159,27 @@
       loader.style.display = "block";
       status.style.display = "block";
 
-      google.script.run
-        .withSuccessHandler(url => {
-          loader.style.display = "none";
-          status.style.display = "none";
-          btn.disabled = false;
-          alert("✅ Imagem guardada com sucesso!\n" + url);
-          input.value = "";
-          preview.src = "";
-          preview.style.display = "none";
-          base64 = "";
-        })
-        .withFailureHandler(err => {
-          loader.style.display = "none";
-          status.style.display = "none";
-          btn.disabled = false;
-          alert("❌ Erro: " + err.message);
-          console.error(err);
-        })
-        .guardarImagem({ imagem: base64, nome, obs });
+      try {
+        const res = await fetch("https://script.google.com/macros/s/AKfycbw3FwDmjYkgE-7tVp8uvhzldfqRGdavpAnsL-NK6LpuhEj9wL-vAPN9psu91VzNlUco/exec", {
+          method: "POST",
+          body: JSON.stringify({ imagem: base64, nome, obs }),
+          headers: { "Content-Type": "application/json" }
+        });
+        const data = await res.text();
+        loader.style.display = "none";
+        status.style.display = "none";
+        btn.disabled = false;
+        alert("✅ Imagem guardada!\n" + data);
+        input.value = "";
+        preview.src = "";
+        preview.style.display = "none";
+        base64 = "";
+      } catch (err) {
+        loader.style.display = "none";
+        status.style.display = "none";
+        btn.disabled = false;
+        alert("❌ Erro ao enviar: " + err.message);
+      }
     });
   </script>
 </body>
