@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+  <title>Recolha de Imagem</title>
+  <style>
+    :root {
+      --primary: #1a73e8;
+      --bg: #f8f9fa;
+      --text: #333;
+      --radius: 12px;
+    }
+
+    body {
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      border-radius: var(--radius);
+      margin: 30px 15px;
+      padding: 25px 20px;
+      width: 100%;
+      max-width: 420px;
+      text-align: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    h2 {
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      margin: 8px 0 15px 0;
+      border: 1px solid #ccc;
+      border-radius: var(--radius);
+      font-size: 16px;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      border: 1px dashed #aaa;
+      border-radius: var(--radius);
+      padding: 10px;
+      cursor: pointer;
+      background: #fafafa;
+      margin-bottom: 10px;
+    }
+
+    img {
+      width: 100%;
+      max-width: 350px;
+      border-radius: var(--radius);
+      margin-top: 10px;
+      display: none;
+    }
+
+    button {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: var(--radius);
+      font-size: 16px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    /* Loader circular */
+    .loader {
+      display: none;
+      margin: 20px auto;
+      border: 5px solid #eee;
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      width: 45px;
+      height: 45px;
+      animation: spin 1s linear infinite;
+    }
+
+    .status-text {
+      font-size: 15px;
+      color: var(--text);
+      margin-top: 8px;
+      display: none;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>📸 Recolha de Imagem</h2>
+
+    <input type="text" id="nome" placeholder="Nome">
+    <textarea id="obs" placeholder="Observações..."></textarea>
+    <input type="file" accept="image/*" capture="environment" id="upload">
+    
+    <img id="preview" alt="Pré-visualização">
+    <button id="btnGuardar">📤 Guardar Imagem</button>
+
+    <div class="loader" id="loader"></div>
+    <div class="status-text" id="status">A enviar imagem...</div>
+  </div>
+
+  <script>
+    const input = document.getElementById('upload');
+    const preview = document.getElementById('preview');
+    const btn = document.getElementById('btnGuardar');
+    const loader = document.getElementById('loader');
+    const status = document.getElementById('status');
+    let base64 = "";
+
+    input.addEventListener('change', e => {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        base64 = reader.result;
+        preview.src = base64;
+        preview.style.display = "block";
+      };
+      if (file) reader.readAsDataURL(file);
+    });
+
+    btn.addEventListener('click', () => {
+      if (!base64) {
+        alert("📷 Selecione ou tire uma foto primeiro.");
+        return;
+      }
+
+      const nome = document.getElementById("nome").value.trim() || "Sem nome";
+      const obs = document.getElementById("obs").value.trim();
+
+      btn.disabled = true;
+      loader.style.display = "block";
+      status.style.display = "block";
+
+      google.script.run
+        .withSuccessHandler(url => {
+          loader.style.display = "none";
+          status.style.display = "none";
+          btn.disabled = false;
+          alert("✅ Imagem guardada com sucesso!\n" + url);
+          input.value = "";
+          preview.src = "";
+          preview.style.display = "none";
+          base64 = "";
+        })
+        .withFailureHandler(err => {
+          loader.style.display = "none";
+          status.style.display = "none";
+          btn.disabled = false;
+          alert("❌ Erro: " + err.message);
+          console.error(err);
+        })
+        .guardarImagem({ imagem: base64, nome, obs });
+    });
+  </script>
+</body>
+</html>
