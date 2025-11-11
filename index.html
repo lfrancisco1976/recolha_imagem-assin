@@ -1,6 +1,109 @@
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbworQvBT3tLPlkVGhO8-SztkIWvXfHO5PB1VQrh3nJqT05THMfciLBj2JNNlvxXIDWa/exec">
-  </head>
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+  <title>Recolha de Imagem</title>
+  <style>
+    :root{--primary:#1a73e8;--bg:#f2f4f8;--radius:14px;--text:#222}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;background:var(--bg);color:var(--text);display:flex;justify-content:center;padding:18px}
+    .card{width:100%;max-width:520px;background:#fff;border-radius:var(--radius);padding:20px;box-shadow:0 6px 20px rgba(0,0,0,0.08)}
+    h1{margin:0 0 12px;font-size:20px;color:var(--primary)}
+    input[type=text],textarea{width:100%;padding:12px;border-radius:10px;border:1px solid #ccc;margin-bottom:12px;font-size:15px;box-sizing:border-box}
+    label.file{display:block;border:2px dashed #cfcfcf;padding:14px;border-radius:12px;text-align:center;cursor:pointer;margin-bottom:12px;background:#fbfbfb}
+    label.file:hover{border-color:var(--primary)}
+    label.file input{display:none}
+    img.preview{display:none;width:100%;border-radius:10px;margin-bottom:12px}
+    button{width:100%;padding:14px;border:none;border-radius:12px;background:var(--primary);color:#fff;font-size:16px;cursor:pointer}
+    .loader{display:none;margin:14px auto;border:5px solid #eee;border-top:5px solid var(--primary);border-radius:50%;width:48px;height:48px;animation:spin 1s linear infinite}
+    .status{display:none;text-align:center;margin-top:10px}
+    @keyframes spin{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+    @media (max-width:420px){h1{font-size:18px}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>📸 Recolha de Imagem</h1>
+
+    <input type="text" id="nome" placeholder="Nome do colaborador">
+    <textarea id="obs" placeholder="Observações..." rows="3"></textarea>
+
+    <label class="file">
+      <input id="upload" type="file" accept="image/*" capture="environment">
+      <div>📷 Tirar foto / escolher da galeria</div>
+    </label>
+
+    <img id="preview" class="preview" alt="Pré-visualização">
+
+    <button id="btn">💾 Guardar imagem</button>
+
+    <div class="loader" id="loader"></div>
+    <div class="status" id="status">A enviar imagem...</div>
+  </div>
+
+<script>
+  // <-- substitui pela tua URL do Apps Script (o link /exec após publicar)
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwMAdD2RF6-HnJZvmI6CtcTUm3Ky2H5wDSBT6-DqSFduYSGAJxN0rCVkW4OsLfBS2Vz/exec';
+
+  const upload = document.getElementById('upload');
+  const preview = document.getElementById('preview');
+  const btn = document.getElementById('btn');
+  const loader = document.getElementById('loader');
+  const status = document.getElementById('status');
+
+  let base64 = '';
+
+  upload.addEventListener('change', e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      base64 = reader.result;
+      preview.src = base64;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(f);
+  });
+
+  btn.addEventListener('click', async () => {
+    if (!base64) { alert('Selecione ou tire uma foto.'); return; }
+
+    const nome = document.getElementById('nome').value.trim() || 'Sem nome';
+    const obs = document.getElementById('obs').value.trim();
+
+    btn.disabled = true;
+    loader.style.display = 'block';
+    status.style.display = 'block';
+
+    try {
+      // Envia JSON com POST
+      const res = await fetch(SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ imagem: base64, nome: nome, obs: obs })
+      });
+
+      const data = await res.json();
+      if (data && data.status === 'ok') {
+        alert('✅ Imagem guardada!');
+        // limpa UI
+        base64 = '';
+        preview.src = '';
+        preview.style.display = 'none';
+        document.getElementById('nome').value = '';
+        document.getElementById('obs').value = '';
+      } else {
+        throw new Error((data && data.message) ? data.message : 'Resposta inesperada do servidor');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao enviar: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      loader.style.display = 'none';
+      status.style.display = 'none';
+    }
+  });
+</script>
+</body>
 </html>
